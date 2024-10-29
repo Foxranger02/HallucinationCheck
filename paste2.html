@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+</head>
+<body>
+    <div contenteditable="true" id="pasteArea" 
+        style="border: 2px dashed #ccc; padding: 20px; margin-bottom: 10px;" aria-placeholder="CTRL+V">
+        
+    </div>
+    <img id="imagePreview" style="max-width: 300px; display: none;" alt="Image Preview" />
+    <button id="uploadButton" style="display: none;">Upload Image</button>
+    <div id="result" class="result">
+
+    </div>
+</body>
+<script>
+    let pastedFile = null; // Store the pasted image file
+
+// Listen for the paste event
+document.getElementById('pasteArea').addEventListener('paste', function (event) {
+    const items = (event.clipboardData || window.clipboardData).items;
+
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+
+        // Check if the pasted item is an image
+        if (item.type.startsWith('image/')) {
+            const file = item.getAsFile(); // Get the image as a File object
+            pastedFile = file; // Store the file for later use
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+                const imagePreview = document.getElementById('imagePreview');
+                imagePreview.src = e.target.result; // Display the image
+                imagePreview.style.display = 'none'; // Make the image visible
+                document.getElementById('uploadButton').style.display = 'inline-block'; // Show the upload button
+            };
+
+            reader.readAsDataURL(file); // Read the image as a Data URL for preview
+        }
+    }
+});
+
+// Upload the image to the API on button click
+document.getElementById('uploadButton').addEventListener('click', function () {
+    if (!pastedFile) {
+        alert('No image to upload');
+        return;
+    }
+
+    var formData = new FormData();
+        formData.append('image', pastedFile);
+        $.ajax({
+            method: 'POST',
+            url: 'https://api.api-ninjas.com/v1/imagetotext',
+            data: formData,
+            enctype: 'multipart/form-data',
+            processData: false,
+            contentType: false, 
+            success: function(res) {
+                var string = ""
+                for(var i=0;i<res.length;i++){
+                    string += " " + res[i].text;
+                }
+                console.log(res)
+                document.getElementById("result").innerHTML = string
+                
+            },
+            error: function ajaxError(jqXHR, textStatus, errorThrown) {
+                alert(jqXHR.responseText);
+            }
+        });
+});
+
+</script>
+</html>
